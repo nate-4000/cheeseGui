@@ -4,26 +4,28 @@ from getLegalMoves import get_legal_moves
 pygame.init()
 
 board = [
-    ["br", "bn", "bb", "bk", "bq", "bb", "bn", "br"],
+    ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
     [None, None, None, None, None, None, None, None],
     [None, None, None, None, None, None, None, None],
     [None, None, None, None, None, None, None, None],
     [None, None, None, None, None, None, None, None],
     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-    ["wr", "wn", "wb", "wk", "wq", "wb", "wn", "wr"]
+    ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"]
 ]
 
-screen = pygame.display.set_mode((800,800))
+ranks = ["a","b","c","d","e","f","g","h","wtf"]
+
+screen = pygame.display.set_mode((800,800), pygame.RESIZABLE)
 
 def iOWS(x, y):
-    # If x+y is odd, the square is black; if it's even, the square is white
-    if (x + y) % 2 == 0:
+    # if x+y is odd, the square is black; if it's even, the square is white
+    if (x + y) % 2 == 1:
         return 0x7f7f7f  # white
     else:
         return 0xf7f7f7  # black
 
-def board_to_fen(board, player):
+def boardToFen(board, player):
     fen = ''
     empty = 0
     for row in board:
@@ -46,8 +48,8 @@ def board_to_fen(board, player):
     fen += ' {} - - 0 1'.format(player)  # add remaining FEN fields
     return fen
     
-def move_piece(selected_piece, pos, board):
-    x1, y1 = selected_piece
+def move_piece(selectedPiece, pos, board):
+    x1, y1 = selectedPiece
     x2, y2 = pos
     piece = board[x1][y1]
     if piece is None:
@@ -66,47 +68,53 @@ def move_piece(selected_piece, pos, board):
 
 Exit = False
 lx, ly = 7, 7
-selected_piece = None
-selected_piece_moves = []
+selectedPiece = None
+selectedPieceMoves = []
 mover = "w"
+hundred = 100
 
 while not Exit:
+    screensize = screen.get_size()
+    hundred = min(screensize) // 8
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             Exit = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             lastx, lasty = lx, ly
-            lx, ly = mouse_pos[1] // 100, mouse_pos[0] // 100
+            lx, ly = mouse_pos[1] // hundred, mouse_pos[0] // hundred
             piece = board[lx][ly]
             if piece is not None and not ((lx, ly) in get_legal_moves(board, lastx, lasty)):
-                selected_piece = (lx, ly)
-                selected_piece_moves = get_legal_moves(board, *selected_piece)
+                selectedPiece = (lx, ly)
+                selectedPieceMoves = get_legal_moves(board, *selectedPiece)
             else:
-                if (lx, ly) in selected_piece_moves and mover == board[selected_piece[0]][selected_piece[1]][0]:
-                    move_piece(selected_piece, (lx, ly), board)
-                    selected_piece = None
-                    selected_piece_moves = []
+                if (lx, ly) in selectedPieceMoves and mover == board[selectedPiece[0]][selectedPiece[1]][0]:
+                    move_piece(selectedPiece, (lx, ly), board)
+                    selectedPiece = None
+                    selectedPieceMoves = []
                     if mover == "w":
                         mover = "b"
                     else:
                         mover = "w"
-                    print(board_to_fen(board, mover))
+                    fen = boardToFen(board, mover)
+                    print(fen)
+                    # print("%s%d" % (ranks[lasty], lastx)) # dont trust it
             
     screen.fill(0)
     for y in range(0, 8):
         for x in range(0, 8):
-            pygame.draw.rect(screen, iOWS(x, y), pygame.Rect(y*100,x*100,y*100+100,x*100+100))
-            if (x, y) == selected_piece:
-                pygame.draw.rect(screen, 0xff0000, pygame.Rect(y*100,x*100,y*100+100,x*100+100), 5)
-            if (x, y) in selected_piece_moves:
-                pygame.draw.circle(screen, 0x00ff00, (y*100+50, x*100+50), 20)
             piece = board[x][y]
+            pygame.draw.rect(screen, iOWS(x, y), pygame.Rect(y*hundred,x*hundred,y*hundred+hundred,x*hundred+hundred))
             if piece is not None:
                 filename = "peices\\{}.png".format(piece)
                 image = pygame.image.load(filename)
-                image = pygame.transform.scale(image, (100, 100))
-                screen.blit(image, (y*100, x*100))
+                image = pygame.transform.scale(image, (hundred, hundred))
+                screen.blit(image, (y*hundred, x*hundred))
+            if (x, y) == selectedPiece:
+                pygame.draw.rect(screen, 0xff0000, pygame.Rect(y*hundred,x*hundred,y*hundred+hundred,x*hundred+hundred), 2)
+            if (x, y) in selectedPieceMoves:
+                pygame.draw.circle(screen, 0x00ff00, (y*hundred+(hundred // 2), x*hundred+(hundred // 2)), hundred // 5)
+
 
     pygame.display.flip()
 
